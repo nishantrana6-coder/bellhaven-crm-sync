@@ -1,0 +1,6 @@
+.bh_token
+data/
+logs/
+.venv/
+__pycache__/
+*.pyc
