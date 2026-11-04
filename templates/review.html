@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bellhaven review{% if practice %} (practice){% endif %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='app.js') }}" defer></script></head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">B</span><div><strong>Bellhaven review</strong><small>Website and CRM sync · Clipboard assessment</small></div></div>
+  <div class="top-right">
+    {% if crm_home %}<a class="link" href="{{ crm_home }}" target="_blank" rel="noopener">Open Clipboard CRM ↗</a>{% endif %}
+    <span class="pill {{ 'purple' if practice else 'green' }}">{{ 'Practice copy' if practice else 'Live assessment CRM' }}</span>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <div>
+      <p class="eyebrow">Customer records</p>
+      <h1>Review every change before it reaches the CRM.</h1>
+      <p class="sub">See what the Bellhaven website says next to what the CRM says. Approve or reject. Every decision is saved.</p>
+    </div>
+    <div class="intro-actions">
+      {% if practice %}<form method="post" action="/practice/reset" class="busy-form"><button class="btn">Start over</button></form>{% endif %}
+      <form method="post" action="/run" class="busy-form"><button class="btn">Refresh website &amp; CRM</button></form>
+    </div>
+  </div>
+
+  {% if practice %}
+  <div class="notice purple"><strong>You're in practice mode.</strong><span>Every button here works on a separate copy saved on this computer. Your real assessment CRM is never contacted.</span></div>
+  {% else %}
+  <div class="notice cream"><strong>Live mode.</strong><span>Approve writes to your assessment CRM. Reject leaves it unchanged. Start your demo recording before you begin.</span></div>
+  {% endif %}
+
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="toast {{ cat }}">{{ msg }}</div>{% endfor %}
+
+  <div class="stats">
+    <a class="stat" href="{{ link('queue') }}"><b>{{ stats.pending }}</b><span>To review</span></a>
+    <a class="stat" href="{{ link('history') }}"><b>{{ stats.applied }}</b><span>Approved &amp; confirmed</span></a>
+    <a class="stat" href="{{ link('history') }}"><b>{{ stats.rejected }}</b><span>Rejected</span></a>
+    <a class="stat {{ 'alert' if stats.failed }}" href="{{ link('queue') }}"><b>{{ stats.failed }}</b><span>Need attention</span></a>
+  </div>
+
+  <div class="toolbar">
+    <nav class="tabs">
+      {% for v, label, n in tabs %}<a class="tab {{ 'active' if view == v }}" href="{{ link(v, None, q, kind) }}">{{ label }} <span class="count">{{ n }}</span></a>{% endfor %}
+    </nav>
+    <form class="filters" method="get" action="/">
+      <input type="hidden" name="view" value="{{ view }}">
+      <input type="search" name="q" value="{{ q }}" placeholder="Find a facility or city…" aria-label="Search">
+      {% if view != 'correct' %}
+      <select name="kind" aria-label="Type of change" data-autosubmit>
+        <option value="">All types of change</option>
+        {% for k, label in kinds %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ label }}</option>{% endfor %}
+      </select>{% endif %}
+    </form>
+  </div>
+
+  <div class="workspace">
+    <aside>
+      <div class="list-head"><strong>{{ {'queue': 'Suggested changes', 'history': 'Decisions, newest first', 'correct': 'Matched with nothing to change'}[view] }}</strong><span>{{ items|length }}</span></div>
+      <div class="list">
+        {% for it in items %}
+        <a class="item {{ 'selected' if sel and it.id == sel.id }}" href="{{ link(view, it.id, q, kind) }}">
+          <span class="pill small {{ it.tone }}">{{ it.tag }}</span>
+          <strong>{{ it.name }}</strong><small>{{ it.sub }}</small>
+        </a>
+        {% else %}
+        <div class="empty">{{ 'Nothing left to review. Every suggestion has a decision.' if view == 'queue' else 'Nothing here yet.' }}</div>
+        {% endfor %}
+      </div>
+    </aside>
+    <article class="detail">
+      {% if not d %}<div class="empty big">Pick an item on the left to see its details.</div>
+      {% elif view == 'correct' %}{% include "_correct.html" %}
+      {% else %}{% include "_detail.html" %}{% endif %}
+    </article>
+  </div>
+
+  <p class="footnote">{% if last %}Last checked {{ when(last.finished_at) }}: {{ last.n_locations }} website communities, {{ last.n_accounts }} CRM records. {% endif %}Reviewer: {{ reviewer }}. This app runs on your computer; nothing changes in the CRM without an Approve click.</p>
+</main>
+
+<dialog id="record-dialog">
+  <div class="dialog-top"><h2>Current record</h2><button class="btn" data-close>Close</button></div>
+  <div id="record-body"></div>
+</dialog>
+</body></html>

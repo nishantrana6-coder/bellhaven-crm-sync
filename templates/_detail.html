@@ -1,0 +1,86 @@
+<div class="detail-head">
+  <div class="meta">
+    <span class="pill {{ d.tone }}">{{ d.tag }}</span>
+    {% if d.check %}<span class="pill amber">Check before approving</span>
+    {% elif d.cosmetic %}<span class="pill grey">Formatting only</span>
+    {% else %}<span class="pill grey">Strong evidence</span>{% endif %}
+  </div>
+  <h2>{{ d.name }}</h2>
+  {% if d.place %}<p class="place">{{ d.place }}</p>{% endif %}
+  <p class="explain">{{ d.explain }}</p>
+</div>
+
+<div class="detail-body">
+  {% if d.banner %}
+  <div class="banner {{ d.banner.tone }}">
+    <strong>{{ d.banner.title }}</strong>
+    <p>{{ d.banner.text }}</p>
+    {% if d.banner.note %}<p>Your note: “{{ d.banner.note }}”</p>{% endif %}
+    {% if d.status != 'failed' %}
+    <div class="banner-actions">
+      {% if d.status == 'applied' %}{% for r in d.records %}<button class="btn small" data-record="{{ r.url }}">View current record: {{ r.label }}</button>{% endfor %}
+      {% for r in d.records %}<a class="btn small" href="{{ r.crm_url }}" target="_blank" rel="noopener">Open {% if d.records|length > 1 %}{{ r.label|lower }} {% endif %}in {{ 'practice CRM' if practice else 'Clipboard CRM' }} ↗</a>{% endfor %}{% endif %}
+      <a class="btn primary small" href="{{ link('queue') }}">Review the next one →</a>
+    </div>{% endif %}
+  </div>
+  {% endif %}
+
+  <p class="section-label">1 · What each source says</p>
+  {% set cols = d.cols %}{% set rows = d.rows %}{% set crm_rows = d.crm_only %}
+  {% include "_compare.html" %}
+  <p class="hint">✓ means the CRM already matches the website. Phone and contacts are shown to help confirm the match; this tool doesn't update them.
+    {% if d.source_url %}<a class="link" href="{{ config_base }}{{ d.source_url }}" target="_blank" rel="noopener">Open the website page ↗</a>{% endif %}</p>
+
+  {% if d.records and d.status not in ('applied',) %}
+  <div class="record-buttons">
+    {% for r in d.records %}<button class="btn small" data-record="{{ r.url }}">View current record: {{ r.label }}</button>{% endfor %}
+  </div>{% endif %}
+
+  {% if d.no_crm %}<div class="box blue">No CRM record matches this community. The tool searched every account, by street address and by facility name in the same city, including other parent companies.</div>{% endif %}
+
+  {% if d.sop %}
+    {% if d.sop.billing_hold %}
+    <div class="box amber"><strong>Billing rule: protect this record.</strong>
+      It has {{ money(d.sop.lifetime_revenue) }} in revenue and an unpaid balance of {{ money(d.sop.outstanding_ar) }}. Billing needs records like this kept exactly as they are, so it must not be moved to another parent company.
+      {% if d.kind == 'CHOW' %}Instead, approving creates a new record under Bellhaven and links the old one to it.{% else %}Instead, approving only links it to the new owner's record.{% endif %}</div>
+    {% else %}
+    <div class="box green"><strong>Billing rule checked: OK to move directly.</strong>
+      Revenue {{ money(d.sop.lifetime_revenue) }}, unpaid balance {{ money(d.sop.outstanding_ar) }}. The rule only protects records that have both revenue and an unpaid balance.</div>
+    {% endif %}
+  {% endif %}
+
+  {% for w in d.warnings %}<div class="box amber"><strong>Check this:</strong> {{ w }}</div>{% endfor %}
+
+  {% if d.match_basis %}<p class="hint">How the tool matched the website to this record: <b>{{ d.match_basis }}</b>.</p>{% endif %}
+  {% if d.near_misses %}
+  <details><summary>Other records the tool looked at, and why they don't match</summary>
+    <ul>{% for n in d.near_misses %}<li>{{ n }}</li>{% endfor %}</ul></details>
+  {% endif %}
+
+  <p class="section-label">2 · {{ 'What was changed' if d.status == 'applied' else 'What approving will do' }}</p>
+  {% for s in d.changes %}
+  <h3>{{ s.title }}</h3>
+  <div class="table-wrap"><table class="changes">
+    <thead><tr><th>Detail</th>{% if not s.create %}<th>Before</th>{% endif %}<th>{{ 'Value' if s.create else 'After approval' }}</th></tr></thead>
+    <tbody>{% for label, before, after in s.rows %}
+      <tr><td class="lbl">{{ label }}</td>{% if not s.create %}<td class="old">{{ before }}</td>{% endif %}<td class="new">{{ after }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endfor %}
+  <p class="hint">{{ d.change_note }}</p>
+
+  <details><summary>The tool's full reasoning</summary><p>{{ d.reason }}</p></details>
+</div>
+
+{% if d.status in ('pending', 'failed') %}
+<form method="post" class="actions busy-form">
+  <input type="text" name="note" placeholder="Add a reason or note (optional, saved with your decision)">
+  <div class="action-row">
+    <small>{{ 'These buttons change only the practice copy on this computer.' if practice else 'Approve writes the changes above to your assessment CRM. Reject leaves it unchanged.' }}</small>
+    <div class="action-buttons">
+      <button class="btn reject" formaction="/p/{{ d.id }}/reject">Reject</button>
+      <button class="btn primary" formaction="/p/{{ d.id }}/approve">Approve &amp; apply</button>
+    </div>
+  </div>
+</form>
+{% endif %}

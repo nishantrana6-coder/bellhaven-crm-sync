@@ -23,7 +23,7 @@ The API token is read from `BH_API_TOKEN` or from a `.bh_token` file in this fol
 | Scrape | `bellhaven_sync/scraper.py` | Crawls every internal page and collects every `/communities/<slug>` link, then parses name, street, city, state, zip, care offerings, administrator and phone from each detail page. |
 | Read CRM | `bellhaven_sync/crm.py` | Pages through all accounts and contacts. Writes are restricted to a whitelist of fields. |
 | Match | `bellhaven_sync/matcher.py` | Matches each location to accounts by address, falls back to name within the same city, and classifies the result. |
-| Review | `app.py` | Shows each proposal with website and CRM side by side, the match basis, the SOP check, and warnings. Approve writes; Reject records the decision. |
+| Review | `app.py`, `templates/` | A list of suggestions on the left and one suggestion on the right: what the website says next to what the CRM says (with a match check on every field), the billing SOP check, warnings, and a before/after table of what approving will do. Approve writes; Reject records the decision. A Decision history tab lists every decision, "View current record" reads any record live and shows it beside the website, and "Already correct" lists the clean matches. |
 | Apply | `bellhaven_sync/apply.py` | Re-reads the live account, refuses if it changed since the proposal or if the SOP now points the other way, writes, then reads back to confirm. |
 | State | `bellhaven_sync/store.py` | SQLite log of runs, proposals and decisions. |
 
@@ -100,24 +100,33 @@ The check runs twice: when the proposal is built, and again on live data at the 
 
 12 locations matched cleanly with nothing to change.
 
+**Review outcome.** I approved 30 proposals and rejected 1 (Ashtabula). A final re-run then read the live CRM: 127 accounts (121 plus 6 created: 4 new communities and 2 CHOW successors), all 35 website communities matched to exactly one account, no duplicates left, and the only remaining difference was the rejected Ashtabula change, which was not proposed again.
+
 Judgment calls worth flagging:
 
 - **Kettering.** Three accounts share the address, none under Bellhaven and none with contacts, matching phone or revenue. The survivor (Kettering Care Centre, Harborview) won on name similarity by a hair. Any of the three would be defensible; what matters is that exactly one survives and the other two point at it.
-- **Ashtabula.** The PO Box is proposed with a warning rather than suppressed, so a person decides whether billing mail should keep going to the PO Box. [Write your decision and reason here.]
-- **Owosso.** The losing duplicate still has an active contact (Admissions Director). The app warns about it; moving contacts is listed under next steps below.
+- **Ashtabula.** The PO Box is proposed with a warning rather than suppressed, so a person decides whether billing mail should keep going to the PO Box. I rejected it: the PO Box may be the intended billing address, so I left the record unchanged until billing confirms which address they want. The rejection is recorded, so the daily run does not propose it again.
+- **Owosso.** The losing duplicate still has an active contact (Admissions Director). The app warns about it; moving contacts across is item 3 under What I'd build next.
 
-## Limitations and next steps
+## What I'd build next
 
-- Move contacts from a losing duplicate to the survivor (the contacts API supports PATCH). I left it out so every write stays on accounts, which the review covers.
-- Let the reviewer choose a different survivor in the app instead of only approving or rejecting the computed one.
+1. **Cover every parent company, not just Bellhaven.** Move the operator-specific pieces (parent account name, website URL, page parsing) into a per-operator config so the same pipeline runs for each large parent. Most facilities belong to a parent and ownership keeps changing, so this is where most of the value is.
+2. **Catch ownership changes from outside sources.** An operator's website only shows what it owns today and can lag behind a sale. Public sources such as CMS change-of-ownership data for nursing facilities and state licensing records would flag sales earlier and give the reviewer a second piece of evidence.
+3. **Move contacts with duplicates.** When a duplicate is inactivated, move its active contacts to the surviving record (the contacts API supports updates), so reps don't lose people like Owosso's admissions director.
+4. **Let the reviewer choose the survivor.** For close calls like Kettering, let the reviewer pick which record survives instead of only approving or rejecting the tool's choice.
+5. **Share and monitor it.** Move the decision log to a hosted database so the job can run on GitHub Actions and a team can review together, post a daily summary to Slack, and alert if the scrape suddenly returns far fewer communities, which would mean a broken scraper rather than closures.
+6. **Auto-approve the safest changes.** Once the rules have a track record, apply formatting-only renames and zip typos automatically, and keep ownership changes, duplicates and anything with a warning for a person.
+
+## Known limitations
+
 - Multi-service communities (Erie, Findlay) list two care offerings, but `care_type` holds one. I keep the existing value when it is one of the offerings and use the first offering for new accounts.
-- No LLM is needed: the rules are deterministic and every decision shows its evidence. An LLM would fit as a second opinion on name-only fallbacks.
-- Alerting: post the run summary to Slack and alert if the scrape returns far fewer locations than the last run, which would mean a broken scraper rather than closed communities.
+- Phone numbers and contacts are shown as matching evidence but not updated.
+- No LLM is used: the rules are deterministic and every decision shows its evidence. An LLM would fit as a second opinion on name-only fallbacks.
 
 ## How I used AI
 
-[Write 3 to 4 honest sentences in your own words: what you asked the AI to do, what you checked yourself, and what you changed after checking.]
+I used Claude as my main builder: it wrote the scraper, matching rules, review app, schedule config and tests from the assessment brief, while I directed the requirements and the review decisions. I also had ChatGPT build a separate version as a second opinion, and I preferred its review screen layout and demo flow, so I had Claude rework my app and demo script around them. Before touching the real CRM, I had Claude add a practice mode and rehearsed the full review on a local copy. I made the review calls myself, including rejecting the Ashtabula PO Box change, and checked approved changes in the CRM browser.
 
 ## Time spent
 
-[Fill in your actual time.]
+About 2 hours 10 minutes.

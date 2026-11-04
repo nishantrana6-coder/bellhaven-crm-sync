@@ -1,0 +1,26 @@
+<div class="record-head">
+  <div>
+    <h3>{{ a.name }}</h3>
+    <p class="hint">{{ 'Read just now from the practice copy' if practice else 'Read just now from your assessment CRM' }} · Record {{ a.account_id }}{% if updated %} · last changed {{ updated }}{% endif %}</p>
+  </div>
+  {% if crm_url %}<a class="btn small" href="{{ crm_url }}" target="_blank" rel="noopener">Open in {{ 'practice CRM' if practice else 'Clipboard CRM' }} ↗</a>{% endif %}
+</div>
+
+{% if links.chow[0] %}<div class="box green"><strong>This is the old record, kept for billing.</strong> Its parent company is left unchanged on purpose. Its ownership link points to the current record: {{ links.chow[1] }} (record {{ short_id(links.chow[0]) }}).</div>{% endif %}
+{% if links.dup[0] %}<div class="box grey-box"><strong>This is an extra copy.</strong> It is marked {{ a.status }} and points to the record we keep: {{ links.dup[1] }} (record {{ short_id(links.dup[0]) }}).</div>{% endif %}
+
+<p class="section-label">What each source says</p>
+{% set cols = ['CRM right now'] %}{% set crm_rows = [] %}
+{% include "_compare.html" %}
+{% if not website %}<p class="hint">This record has no community on the Bellhaven website to compare with.</p>{% endif %}
+
+<p class="section-label">Only in the CRM</p>
+<div class="table-wrap"><table class="changes">
+  <tbody>
+    <tr><td class="lbl">Revenue (all time)</td><td>{{ money(a.lifetime_revenue) }}</td></tr>
+    <tr><td class="lbl">Unpaid balance (AR)</td><td>{{ money(a.outstanding_ar) }}</td></tr>
+    <tr><td class="lbl">Ownership link (chow_current_account)</td><td class="{{ 'new' if links.chow[0] }}">{% if links.chow[0] %}{{ links.chow[1] }} (record {{ short_id(links.chow[0]) }}){% else %}(empty){% endif %}</td></tr>
+    <tr><td class="lbl">Duplicate of (duplicate_of_account)</td><td class="{{ 'new' if links.dup[0] }}">{% if links.dup[0] %}{{ links.dup[1] }} (record {{ short_id(links.dup[0]) }}){% else %}(empty){% endif %}</td></tr>
+    <tr><td class="lbl">Note</td><td class="note">{{ a.note or '(empty)' }}</td></tr>
+  </tbody>
+</table></div>

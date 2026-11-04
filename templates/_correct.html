@@ -1,0 +1,18 @@
+<div class="detail-head">
+  <div class="meta"><span class="pill green">Already correct</span></div>
+  <h2>{{ d.name }}</h2>
+  {% if d.place %}<p class="place">{{ d.place }}</p>{% endif %}
+  <p class="explain">The website and the CRM agree on this community, so there is nothing to change. Small spelling differences (like "Dr" and "Drive") count as the same.</p>
+</div>
+<div class="detail-body">
+  <div class="banner green"><strong>Matched, nothing to change</strong>
+    <p>How the tool matched them: <b>{{ d.basis }}</b>.{% for n in d.notes %} {{ n }}{% endfor %}</p></div>
+  {% if d.has_snapshots %}
+    <p class="section-label">What each source says</p>
+    {% set cols = d.cols %}{% set rows = d.rows %}{% set crm_rows = d.crm_only %}
+    {% include "_compare.html" %}
+  {% else %}
+    <p class="hint">Click "Refresh website &amp; CRM" once to load the side-by-side details for these.</p>
+  {% endif %}
+  <div class="record-buttons">{% for r in d.records %}<button class="btn small" data-record="{{ r.url }}">View current record</button>{% endfor %}</div>
+</div>

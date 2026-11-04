@@ -1,0 +1,6 @@
+# Daily at 06:15 server time. The pipeline only reads the website and CRM and
+# queues proposals; it never writes to the CRM. Reviewers approve in the app,
+# which runs on the same host so both share data/pipeline.db (the decision log
+# that makes re-runs safe).
+# BH_API_TOKEN comes from the environment of the service user.
+15 6 * * * cd /opt/bellhaven-sync && .venv/bin/python run_pipeline.py >> logs/pipeline.log 2>&1

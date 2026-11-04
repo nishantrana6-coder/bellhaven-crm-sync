@@ -1,0 +1,15 @@
+{# Website vs CRM side by side. Needs: cols (CRM column titles), rows, crm_rows, chips #}
+<div class="table-wrap">
+<table class="compare">
+  <thead><tr><th>Detail</th><th class="src web">Bellhaven website</th>{% for c in cols %}<th class="src crm">{{ c }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td class="lbl">{{ r.label }}</td><td class="webval">{{ r.website or '—' }}</td>
+    {% for v, st in r.cells %}<td class="cell {{ st }}">{{ v or '—' }}{% if st and st != 'same' %}<span class="chip {{ st }}">{{ chips[st] }}</span>{% elif st == 'same' %}<span class="tick" title="Same as the website">✓</span>{% endif %}</td>{% endfor %}</tr>
+  {% endfor %}
+  {% for r in crm_rows %}
+    <tr class="crm-only"><td class="lbl">{{ r.label }}</td><td class="na">Not on the website</td>{% for v in r.cells %}<td>{{ v or '—' }}</td>{% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

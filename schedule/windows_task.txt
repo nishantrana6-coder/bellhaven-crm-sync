@@ -1,0 +1,2 @@
+REM Same daily schedule with Windows Task Scheduler (run once in a command prompt):
+schtasks /create /tn "Bellhaven CRM sync" /sc daily /st 06:15 /tr "cmd /c \"%USERPROFILE%\Documents\bellhaven-assessment\run_pipeline.bat >> %USERPROFILE%\Documents\bellhaven-assessment\data\pipeline.log 2>&1\""
